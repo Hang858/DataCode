@@ -1,0 +1,97 @@
+version: '3'
+services:
+  # === 指挥官：Master 节点 ===
+  os-master:
+    image: opensearchproject/opensearch:latest
+    container_name: os-master
+    environment:
+      - cluster.name=wsl-test-cluster
+      - node.name=os-master
+      - node.roles=cluster_manager
+      - discovery.seed_hosts=os-master,os-data1,os-data2,os-data3
+      - cluster.initial_cluster_manager_nodes=os-master
+      - bootstrap.memory_lock=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g" # 【模拟参数】：1G 内存
+      - "OPENSEARCH_INITIAL_ADMIN_PASSWORD=MyStrongPass123!"
+    ulimits:
+      memlock: { soft: -1, hard: -1 }
+      nofile: { soft: 65536, hard: 65536 }
+    volumes:
+      - master-data:/usr/share/opensearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - os-net
+
+  # === 工人 1 号：Data 节点 ===
+  os-data1:
+    image: opensearchproject/opensearch:latest
+    container_name: os-data1
+    environment:
+      - cluster.name=wsl-test-cluster
+      - node.name=os-data1
+      - node.roles=data,ingest
+      - discovery.seed_hosts=os-master,os-data1,os-data2,os-data3
+      - cluster.initial_cluster_manager_nodes=os-master
+      - bootstrap.memory_lock=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms2g -Xmx2g" # 【模拟参数】：2G 内存
+      - "OPENSEARCH_INITIAL_ADMIN_PASSWORD=MyStrongPass123!"
+    ulimits:
+      memlock: { soft: -1, hard: -1 }
+      nofile: { soft: 65536, hard: 65536 }
+    volumes:
+      - data1-data:/usr/share/opensearch/data
+    networks:
+      - os-net
+
+  # === 工人 2 号：Data 节点 ===
+  os-data2:
+    image: opensearchproject/opensearch:latest
+    container_name: os-data2
+    environment:
+      - cluster.name=wsl-test-cluster
+      - node.name=os-data2
+      - node.roles=data,ingest
+      - discovery.seed_hosts=os-master,os-data1,os-data2,os-data3
+      - cluster.initial_cluster_manager_nodes=os-master
+      - bootstrap.memory_lock=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms2g -Xmx2g" # 【模拟参数】：2G 内存
+      - "OPENSEARCH_INITIAL_ADMIN_PASSWORD=MyStrongPass123!"
+    ulimits:
+      memlock: { soft: -1, hard: -1 }
+      nofile: { soft: 65536, hard: 65536 }
+    volumes:
+      - data2-data:/usr/share/opensearch/data
+    networks:
+      - os-net
+
+  # === 工人 3 号：Data 节点 ===
+  os-data3:
+    image: opensearchproject/opensearch:latest
+    container_name: os-data3
+    environment:
+      - cluster.name=wsl-test-cluster
+      - node.name=os-data3
+      - node.roles=data,ingest
+      - discovery.seed_hosts=os-master,os-data1,os-data2,os-data3
+      - cluster.initial_cluster_manager_nodes=os-master
+      - bootstrap.memory_lock=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms2g -Xmx2g" # 【模拟参数】：2G 内存
+      - "OPENSEARCH_INITIAL_ADMIN_PASSWORD=MyStrongPass123!"
+    ulimits:
+      memlock: { soft: -1, hard: -1 }
+      nofile: { soft: 65536, hard: 65536 }
+    volumes:
+      - data3-data:/usr/share/opensearch/data
+    networks:
+      - os-net
+
+volumes:
+  master-data:
+  data1-data:
+  data2-data:
+  data3-data:
+
+networks:
+  os-net:
+    driver: bridge

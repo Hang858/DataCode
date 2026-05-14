@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}数据查看系统{% endblock %}</title>
+    <style>
+        :root {
+            --page-max-width: 100%;
+            --content-max-width: 800px;
+            --border-color: #ddd;
+            --muted-bg: #f2f2f2;
+            --muted-row: #f9f9f9;
+            --text-main: #333;
+            --link-accent: #007bff;
+            --button-primary: #4caf50;
+            --button-primary-hover: #45a049;
+            --button-secondary: #f1f1f1;
+            --button-secondary-hover: #ddd;
+            --error-bg: #ffebee;
+            --error-text: #c62828;
+            --info-bg: #e3f2fd;
+            --info-text: #1565c0;
+            --success-bg: #e8f5e9;
+            --success-text: #2e7d32;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            max-width: var(--page-max-width);
+            margin: 0 auto;
+            padding: 20px;
+            color: var(--text-main);
+        }
+
+        .container {
+            max-width: var(--content-max-width);
+            margin: 0 auto;
+        }
+
+        .centered-container {
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        .button,
+        button,
+        input[type="submit"] {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: var(--button-primary);
+            color: #fff;
+            text-decoration: none;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .button:hover,
+        button:hover,
+        input[type="submit"]:hover {
+            background-color: var(--button-primary-hover);
+        }
+
+        .secondary-button {
+            background-color: var(--button-secondary);
+            color: #000;
+        }
+
+        .secondary-button:hover {
+            background-color: var(--button-secondary-hover);
+        }
+
+        .button-row {
+            margin-top: 16px;
+        }
+
+        .button-row .button,
+        .button-row button {
+            margin-right: 10px;
+        }
+
+        .summary {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .summary-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .summary-highlight {
+            color: var(--link-accent);
+        }
+
+        .summary-meta {
+            font-size: 14px;
+            font-weight: normal;
+            color: #666;
+        }
+
+        .search-panel {
+            margin-bottom: 20px;
+        }
+
+        .search-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 12px;
+            align-items: center;
+        }
+
+        .search-form label {
+            font-weight: bold;
+        }
+
+        .search-form input,
+        .search-form select {
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: 600px;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        th,
+        td {
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: center;
+        }
+
+        th {
+            background-color: var(--muted-bg);
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        tr:nth-child(even) {
+            background-color: var(--muted-row);
+        }
+
+        .form-page {
+            max-width: var(--content-max-width);
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .form-page form {
+            text-align: left;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input[type="date"],
+        .form-group input[type="text"],
+        .form-group input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 10px;
+        }
+
+        .message-box,
+        .result-box {
+            max-width: 500px;
+            margin: 0 auto 20px;
+            padding: 10px 15px;
+            border-radius: 4px;
+            text-align: left;
+        }
+
+        .message-box.error {
+            background-color: var(--error-bg);
+            color: var(--error-text);
+        }
+
+        .message-box.info {
+            background-color: var(--info-bg);
+            color: var(--info-text);
+            font-weight: bold;
+        }
+
+        .message-box.success {
+            background-color: var(--success-bg);
+            color: var(--success-text);
+        }
+
+        .result-box {
+            margin-top: 30px;
+            background-color: var(--muted-row);
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    {% block content %}{% endblock %}
+    <script>
+        (function () {
+            const EMBED_API_BASE_URL = "{{ embed_api_base_url|default:''|escapejs }}";
+
+            function getPageConfig() {
+                return document.getElementById("page-config");
+            }
+
+            function getPageKind() {
+                const path = window.location.pathname.toLowerCase();
+                if (path.includes("telegram")) {
+                    return "telegram";
+                }
+                if (path.includes("darknet")) {
+                    return "darknet";
+                }
+
+                const title = document.title.toLowerCase();
+                if (title.includes("telegram")) {
+                    return "telegram";
+                }
+                if (title.includes("darknet")) {
+                    return "darknet";
+                }
+                return "";
+            }
+
+            function getApiBaseUrl() {
+                const configElement = getPageConfig();
+                const configured = configElement ? configElement.dataset.apiBaseUrl : "";
+                if (configured) {
+                    return configured.replace(/\/$/, "");
+                }
+                if (EMBED_API_BASE_URL) {
+                    return EMBED_API_BASE_URL.replace(/\/$/, "");
+                }
+                if (window.location.port === "8080") {
+                    return `${window.location.protocol}//${window.location.hostname}:8000`;
+                }
+                return window.location.origin;
+            }
+
+            function buildApiUrl(path) {
+                return `${getApiBaseUrl()}${path.startsWith("/") ? path : `/${path}`}`;
+            }
+
+            function restoreSearchFieldValue() {
+                const selectElement = document.getElementById("search_field");
+                if (!selectElement) {
+                    return;
+                }
+
+                const currentSearchField = new URLSearchParams(window.location.search).get("search_field");
+                if (currentSearchField !== null) {
+                    selectElement.value = currentSearchField;
+                }
+            }
+
+            function appendRows(tbody, columns, items) {
+                items.forEach((item) => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = columns
+                        .map((column) => {
+                            const rawValue = item[column.key];
+                            const fallbackValue = rawValue === undefined || rawValue === null || rawValue === "" ? (column.emptyText || "") : rawValue;
+                            const text = String(fallbackValue);
+                            return `<td title="${escapeHtml(text)}">${escapeHtml(text)}</td>`;
+                        })
+                        .join("");
+                    tbody.appendChild(tr);
+                });
+            }
+
+            function escapeHtml(value) {
+                return value
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#39;");
+            }
+
+            function initInfiniteScroll() {
+                const configElement = getPageConfig();
+                const tableContainer = document.querySelector(".table-container");
+                const tbody = document.querySelector("tbody");
+
+                if (!configElement || !tableContainer || !tbody) {
+                    return;
+                }
+
+                const kind = getPageKind();
+                const endpoint = configElement.dataset.endpoint || (kind ? buildApiUrl(`/${kind}/`) : "");
+                const nextCursor = configElement.dataset.nextCursor;
+                let columns = [];
+                try {
+                    columns = JSON.parse(configElement.dataset.columns || "[]");
+                } catch (err) {
+                    console.error("表格列配置解析失败:", err);
+                    return;
+                }
+
+                let currentCursor = nextCursor;
+                let isLoading = false;
+                let hasMore = Boolean(currentCursor);
+
+                tableContainer.addEventListener("scroll", () => {
+                    if (tableContainer.scrollTop + tableContainer.clientHeight < tableContainer.scrollHeight - 300) {
+                        return;
+                    }
+                    if (isLoading || !hasMore) {
+                        return;
+                    }
+
+                    isLoading = true;
+                    const urlParams = new URLSearchParams(window.location.search);
+                    urlParams.set("ajax", "true");
+                    urlParams.set("search_after", currentCursor);
+
+                    fetch(`${endpoint}?${urlParams.toString()}`, {
+                        headers: {
+                            "X-Requested-With": "XMLHttpRequest",
+                        },
+                    })
+                        .then((response) => response.json())
+                        .then((res) => {
+                            if (res.data && res.data.length > 0) {
+                                appendRows(tbody, columns, res.data);
+                            }
+
+                            if (res.next_cursor) {
+                                currentCursor = JSON.stringify(res.next_cursor);
+                            } else {
+                                hasMore = false;
+                            }
+                        })
+                        .catch((err) => {
+                            console.error("加载数据失败:", err);
+                        })
+                        .finally(() => {
+                            isLoading = false;
+                        });
+                });
+            }
+
+            function initStatsRefresh() {
+                if (document.body.dataset.statsRefreshBound === "true") {
+                    return;
+                }
+                document.body.dataset.statsRefreshBound = "true";
+
+                document.addEventListener("click", (event) => {
+                    const refreshButton = event.target.closest("#stats-refresh-btn");
+                    if (!refreshButton) {
+                        return;
+                    }
+
+                    const countElement = document.getElementById("stats-count");
+                    const updatedAtElement = document.getElementById("stats-updated-at");
+                    const statusElement = document.getElementById("stats-refresh-status");
+                    const configElement = getPageConfig();
+                    let statsUrl = refreshButton.dataset.statsUrl || (configElement ? configElement.dataset.statsUrl : "");
+                    if (!statsUrl && configElement && configElement.dataset.endpoint) {
+                        try {
+                            const endpointUrl = new URL(configElement.dataset.endpoint, window.location.origin);
+                            const normalizedPath = endpointUrl.pathname.endsWith("/") ? endpointUrl.pathname : `${endpointUrl.pathname}/`;
+                            endpointUrl.pathname = `${normalizedPath}stats-refresh/`;
+                            endpointUrl.search = "";
+                            endpointUrl.hash = "";
+                            statsUrl = endpointUrl.toString();
+                        } catch (err) {
+                            console.error("统计地址推导失败:", err);
+                        }
+                    }
+                    if (!statsUrl) {
+                        const kind = getPageKind();
+                        if (kind) {
+                            statsUrl = buildApiUrl(`/${kind}/stats-refresh/`);
+                        }
+                    }
+                    const formatter = refreshButton.dataset.statsFormatter || "raw";
+                    const originalText = refreshButton.textContent.trim();
+
+                    if (!statsUrl) {
+                        console.error("缺少统计刷新地址");
+                        if (statusElement) {
+                            statusElement.textContent = "缺少统计刷新地址";
+                        }
+                        return;
+                    }
+
+                    refreshButton.disabled = true;
+                    refreshButton.textContent = "更新中...";
+                    if (statusElement) {
+                        statusElement.textContent = "正在更新统计...";
+                    }
+
+                    const url = new URL(statsUrl, window.location.origin);
+                    const currentParams = new URLSearchParams(window.location.search);
+                    currentParams.forEach((value, key) => {
+                        if (key !== "ajax" && key !== "search_after") {
+                            url.searchParams.set(key, value);
+                        }
+                    });
+
+                    fetch(url, {
+                        method: "POST",
+                        headers: {
+                            "X-Requested-With": "XMLHttpRequest",
+                        },
+                    })
+                        .then((response) => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then((data) => {
+                            if (data.error) {
+                                throw new Error(data.error);
+                            }
+
+                            if (countElement) {
+                                let countValue = data.distinct_count;
+                                if (formatter === "darknet_adjusted" && typeof countValue === "number") {
+                                    countValue = Math.max(0, countValue - 1);
+                                }
+                                countElement.textContent = countValue ?? "--";
+                            }
+
+                            if (updatedAtElement) {
+                                updatedAtElement.textContent = data.updated_at || "刚刚";
+                            }
+                            if (statusElement) {
+                                statusElement.textContent = "统计已更新";
+                            }
+                        })
+                        .catch((err) => {
+                            console.error("更新统计失败:", err);
+                            if (statusElement) {
+                                statusElement.textContent = "更新失败，请稍后重试";
+                            }
+                            alert("更新统计失败，请稍后重试");
+                        })
+                        .finally(() => {
+                            refreshButton.disabled = false;
+                            refreshButton.textContent = originalText;
+                        });
+                });
+            }
+
+            function buildTaskUrl(template, taskId, fallbackSuffix) {
+                if (template) {
+                    return template.replace(/\/export-task\/0\//, `/export-task/${taskId}/`);
+                }
+                return `${getApiBaseUrl()}${fallbackSuffix.replace("{taskId}", taskId)}`;
+            }
+
+            function pollExportTask(taskId, statusElement) {
+                const configElement = getPageConfig();
+                const statusTemplate = configElement ? configElement.dataset.exportTaskStatusTemplate : "";
+                const downloadTemplate = configElement ? configElement.dataset.exportTaskDownloadTemplate : "";
+                const statusUrl = buildTaskUrl(statusTemplate, taskId, "/export-task/{taskId}/status/");
+                const downloadUrl = buildTaskUrl(downloadTemplate, taskId, "/export-task/{taskId}/download/");
+                let failureCount = 0;
+
+                const timer = window.setInterval(() => {
+                    fetch(statusUrl, {
+                        headers: {
+                            "X-Requested-With": "XMLHttpRequest",
+                        },
+                    })
+                        .then((response) => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP ${response.status}: ${statusUrl}`);
+                            }
+                            return response.text();
+                        })
+                        .then((text) => {
+                            try {
+                                return JSON.parse(text);
+                            } catch (err) {
+                                const preview = text.slice(0, 120).replace(/\s+/g, " ");
+                                throw new Error(`状态接口返回非JSON: ${preview}`);
+                            }
+                        })
+                        .then((data) => {
+                            failureCount = 0;
+                            if (data.error) {
+                                throw new Error(data.error);
+                            }
+
+                            if (data.status === "success") {
+                                window.clearInterval(timer);
+                                if (statusElement) {
+                                    statusElement.textContent = `导出完成，共 ${data.row_count || 0} 条，开始下载`;
+                                }
+                                window.location.href = downloadUrl;
+                                return;
+                            }
+
+                            if (data.status === "failed") {
+                                window.clearInterval(timer);
+                                if (statusElement) {
+                                    statusElement.textContent = data.error_message || "导出失败";
+                                }
+                                return;
+                            }
+
+                            if (statusElement) {
+                                statusElement.textContent = "导出任务处理中...";
+                            }
+                        })
+                        .catch((err) => {
+                            console.error("查询导出任务失败:", err);
+                            failureCount += 1;
+                            if (statusElement) {
+                                statusElement.textContent = "导出任务已创建，正在等待文件生成...";
+                            }
+                            if (failureCount >= 3) {
+                                window.clearInterval(timer);
+                                if (statusElement) {
+                                    statusElement.textContent = "无法查询任务状态，尝试直接下载...";
+                                }
+                                window.location.href = downloadUrl;
+                            }
+                        });
+                }, 1500);
+            }
+
+            function initExportActions() {
+                if (document.body.dataset.exportActionBound === "true") {
+                    return;
+                }
+                document.body.dataset.exportActionBound = "true";
+
+                document.addEventListener("click", (event) => {
+                    const exportButton = event.target.closest("[data-export-create-url]");
+                    if (!exportButton) {
+                        return;
+                    }
+
+                    event.preventDefault();
+
+                    let createUrl = exportButton.dataset.exportCreateUrl;
+                    if (!createUrl) {
+                        const kind = getPageKind();
+                        if (kind) {
+                            createUrl = buildApiUrl(`/${kind}/export-create/`);
+                        }
+                    }
+                    const statusElement = document.getElementById("export-status");
+                    const originalText = exportButton.textContent.trim();
+                    const url = new URL(createUrl, window.location.origin);
+                    const currentParams = new URLSearchParams(window.location.search);
+
+                    currentParams.forEach((value, key) => {
+                        if (key !== "ajax" && key !== "search_after") {
+                            url.searchParams.set(key, value);
+                        }
+                    });
+
+                    exportButton.disabled = true;
+                    exportButton.textContent = "创建中...";
+                    if (statusElement) {
+                        statusElement.textContent = "正在创建导出任务...";
+                    }
+
+                    fetch(url, {
+                        method: "POST",
+                        headers: {
+                            "X-Requested-With": "XMLHttpRequest",
+                        },
+                    })
+                        .then((response) => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then((data) => {
+                            if (data.error) {
+                                throw new Error(data.error);
+                            }
+                            if (statusElement) {
+                                statusElement.textContent = `导出任务已创建，任务ID: ${data.task_id}`;
+                            }
+                            pollExportTask(data.task_id, statusElement);
+                        })
+                        .catch((err) => {
+                            console.error("创建导出任务失败:", err);
+                            if (statusElement) {
+                                statusElement.textContent = "创建导出任务失败";
+                            }
+                            alert("创建导出任务失败，请稍后重试");
+                        })
+                        .finally(() => {
+                            exportButton.disabled = false;
+                            exportButton.textContent = originalText;
+                        });
+                });
+            }
+
+            function initPage() {
+                initStatsRefresh();
+                initExportActions();
+                restoreSearchFieldValue();
+                initInfiniteScroll();
+            }
+
+            if (document.readyState === "loading") {
+                window.addEventListener("DOMContentLoaded", initPage);
+            } else {
+                initPage();
+            }
+        })();
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

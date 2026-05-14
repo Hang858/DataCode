@@ -1,0 +1,101 @@
+{% extends "db_display/base.html" %}
+
+{% block title %}参数设置{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <h1>参数设置</h1>
+
+    {% if error_message %}
+    <div class="message-box error">
+        {{ error_message }}
+    </div>
+    {% endif %}
+
+    {% if has_record %}
+    <div class="message-box info">
+        记录已存在，重新设置后需要重启任务生效
+    </div>
+    {% endif %}
+
+    <form method="post" action="">
+        {% csrf_token %}
+
+        {% if task_id %}
+        <input type="hidden" name="task_id" value="{{ task_id }}">
+        {% endif %}
+
+        <div class="form-group">
+            <label for="start_date">开始日期:</label>
+            <input type="date" id="start_date" name="start_date" value="{{ start_date|default:'' }}">
+        </div>
+
+        <div class="form-group">
+            <label for="end_date">截止日期:</label>
+            <input type="date" id="end_date" name="end_date" value="{{ end_date|default:'' }}">
+        </div>
+
+        <div class="form-group">
+            <label>数据源选择：</label>
+            <div class="checkbox-group">
+                <input type="checkbox" id="telegram" name="telegram" {% if telegram_checked %}checked{% endif %}>
+                <label for="telegram">Telegram</label>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="darknet" name="darknet" {% if darknet_checked %}checked{% endif %}>
+                <label for="darknet">Darknet</label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="telegram_search_field">Telegram搜索字段:</label>
+            <select id="telegram_search_field" name="telegram_search_field">
+                {% for value, label in telegram_search_field_options %}
+                <option value="{{ value }}" {% if value == telegram_search_field %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="telegram_search_value">Telegram搜索内容:</label>
+            <input type="text" id="telegram_search_value" name="telegram_search_value" value="{{ telegram_search_value|default:'' }}" placeholder="不填则不启用字段过滤">
+        </div>
+
+        <div class="form-group">
+            <label>Darknet搜索条件（AND，与逻辑，最多3个）:</label>
+            {% for filter in darknet_filters %}
+            <div class="search-condition-row">
+                <select id="darknet_search_field_{{ forloop.counter }}" name="darknet_search_field_{{ forloop.counter }}">
+                    {% for value, label in darknet_search_field_options %}
+                    <option value="{{ value }}" {% if value == filter.search_field %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <input type="text" id="darknet_search_value_{{ forloop.counter }}" name="darknet_search_value_{{ forloop.counter }}" value="{{ filter.search_value|default:'' }}" placeholder="条件{{ forloop.counter }}，不填则忽略">
+            </div>
+            {% endfor %}
+        </div>
+
+        <button type="submit" class="button">提交</button>
+    </form>
+
+    {% if submitted %}
+    <div class="result-box">
+        <h3>参数已提交:</h3>
+        {% if task_id %}
+        <p><strong>Task:</strong> {{ task_id }}</p>
+        {% endif %}
+        <p><strong>开始日期:</strong> {{ start_date }}</p>
+        <p><strong>截止日期:</strong> {{ end_date }}</p>
+        <p><strong>Telegram:</strong> {% if telegram_checked %}已选中{% else %}未选中{% endif %}</p>
+        <p><strong>Darknet:</strong> {% if darknet_checked %}已选中{% else %}未选中{% endif %}</p>
+        <p><strong>Telegram搜索:</strong> {{ telegram_search_field|default:'无' }} {{ telegram_search_value|default:'' }}</p>
+        <p><strong>Darknet搜索:</strong></p>
+        {% for filter in darknet_filters %}
+            {% if filter.search_value %}
+            <p>条件{{ forloop.counter }}: {{ filter.search_field|default:'全局搜索' }} {{ filter.search_value }}</p>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

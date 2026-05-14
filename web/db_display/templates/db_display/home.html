@@ -1,0 +1,15 @@
+{% extends "db_display/base.html" %}
+
+{% block title %}数据查看系统{% endblock %}
+
+{% block content %}
+<div class="container centered-container">
+    <h1>数据查看系统</h1>
+    <p>选择要查看的数据表：</p>
+    <div class="button-row">
+        <a href="{% url 'telegram' %}" class="button">查看Telegram数据</a>
+        <a href="{% url 'darknet' %}" class="button">查看Darknet数据</a>
+        <a href="{% url 'parameter_config' %}" class="button">参数配置</a>
+    </div>
+</div>
+{% endblock %}

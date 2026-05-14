@@ -1,0 +1,12 @@
+__MACOSX/
+__pycache__/
+*.log
+*.pyc
+.codex
+.agents/
+.pytest_cache/
+.vscode/
+datascratch_tests/
+DataTerminal/
+old/
+*.zip

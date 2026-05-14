@@ -1,0 +1,176 @@
+{% extends "db_display/base.html" %}
+{% block title %}Darknet数据{% endblock %}
+
+{% block content %}
+<div id="page-config"
+     data-api-base-url="{{ embed_api_base_url }}"
+     data-endpoint="{{ darknet_absolute_url }}"
+     data-next-cursor="{{ next_cursor_json|escape }}"
+     data-stats-url="{{ darknet_stats_refresh_absolute_url }}"
+     data-export-task-status-template="{{ export_task_status_template_absolute_url }}"
+     data-export-task-download-template="{{ export_task_download_template_absolute_url }}"
+     data-columns='[
+        {"key":"id"},
+        {"key":"id_field"},
+        {"key":"title"},
+        {"key":"url"},
+        {"key":"msg_release_time"},
+        {"key":"source"},
+        {"key":"org","emptyText":"无"},
+        {"key":"detail_parsing"},
+        {"key":"event"},
+        {"key":"industry"},
+        {"key":"is_read"},
+        {"key":"msg_author"},
+        {"key":"msg_title_cn"},
+        {"key":"msg_description"},
+        {"key":"path"},
+        {"key":"regions_city"},
+        {"key":"regions_country"},
+        {"key":"regions_province"},
+        {"key":"root_domain"},
+        {"key":"tags"},
+        {"key":"timestamp"},
+        {"key":"toplv_domain"},
+        {"key":"update_time"},
+        {"key":"user_id"},
+        {"key":"to_new"},
+        {"key":"msg_sample_ss"},
+        {"key":"msg_keyword"},
+        {"key":"msg_webpage_ss"},
+        {"key":"child_file"}
+     ]'></div>
+
+<h1>Darknet数据表</h1>
+
+<div class="summary-row">
+    <div class="summary">
+        当前条件下不同网站数量: <span id="stats-count" class="summary-highlight">{{ distinct_root_domains_count|default:"--" }}</span>
+    </div>
+    <div class="summary-meta">
+        上次更新时间: <span id="stats-updated-at">{{ stats_updated_at|default:"未更新" }}</span>
+    </div>
+    <button
+        type="button"
+        id="stats-refresh-btn"
+        data-stats-url="{{ darknet_stats_refresh_absolute_url }}"
+        data-stats-formatter="darknet_adjusted"
+    >
+        更新统计
+    </button>
+    <span id="stats-refresh-status" class="summary-meta"></span>
+</div>
+
+<div class="search-panel">
+    <form method="get" action="" class="search-form">
+        <label for="start_date">开始日期:</label>
+        <input type="date" id="start_date" name="start_date" value="{{ request.GET.start_date|default:'' }}">
+
+        <label for="end_date">结束日期:</label>
+        <input type="date" id="end_date" name="end_date" value="{{ request.GET.end_date|default:'' }}">
+
+        <label for="search_field">搜索字段:</label>
+        <select id="search_field" name="search_field">
+            {% for value, label in search_field_options %}
+            <option value="{{ value }}">{{ label }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="search_value">搜索内容:</label>
+        <input type="text" id="search_value" name="search_value" value="{{ request.GET.search_value|default:'' }}" placeholder="输入关键词...">
+
+        <button type="submit">搜索</button>
+        <button type="button" class="secondary-button" onclick="window.location.href=window.location.pathname;">清空重置</button>
+    </form>
+    <div class="summary-meta" style="margin-top: 10px;">
+        可异步导出当前筛选条件下的数据，最多导出 {{ export_max_rows }} 条。
+    </div>
+    <div class="button-row">
+        <button
+            type="button"
+            class="button"
+            data-export-create-url="{{ darknet_export_create_absolute_url }}"
+        >
+            导出 Excel
+        </button>
+        <span id="export-status" class="summary-meta"></span>
+    </div>
+</div>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 40px;">ID</th>
+                <th style="width: 100px;">_id</th>
+                <th style="width: 120px;">网页标题</th>
+                <th style="width: 150px;">网页URL</th>
+                <th style="width: 120px;">发布时间</th>
+                <th style="width: 80px;">来源</th>
+                <th style="width: 80px;">机构</th>
+                <th style="width: 100px;">详情解析</th>
+                <th style="width: 100px;">事件</th>
+                <th style="width: 80px;">行业</th>
+                <th style="width: 80px;">是否已读</th>
+                <th style="width: 60px;">作者</th>
+                <th style="width: 80px;">标题(中文)</th>
+                <th style="width: 120px;">消息描述</th>
+                <th style="width: 100px;">路径</th>
+                <th style="width: 100px;">城市</th>
+                <th style="width: 80px;">国家</th>
+                <th style="width: 80px;">省份</th>
+                <th style="width: 80px;">根域名</th>
+                <th style="width: 100px;">标签</th>
+                <th style="width: 100px;">时间戳</th>
+                <th style="width: 100px;">顶级域名</th>
+                <th style="width: 100px;">更新时间</th>
+                <th style="width: 100px;">用户ID</th>
+                <th style="width: 80px;">是否更新</th>
+                <th style="width: 80px;">消息截图</th>
+                <th style="width: 100px;">关键词</th>
+                <th style="width: 100px;">网页截图</th>
+                <th style="width: 100px;">子文件</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in darknet_data %}
+            <tr>
+                <td title="{{ item.id }}">{{ item.id }}</td>
+                <td title="{{ item.id_field }}">{{ item.id_field }}</td>
+                <td title="{{ item.title }}">{{ item.title }}</td>
+                <td title="{{ item.url }}">{{ item.url }}</td>
+                <td title="{{ item.msg_release_time }}">{{ item.msg_release_time }}</td>
+                <td title="{{ item.source }}">{{ item.source }}</td>
+                <td title="{{ item.org|default:'无' }}">{{ item.org|default:'无' }}</td>
+                <td title="{{ item.detail_parsing }}">{{ item.detail_parsing }}</td>
+                <td title="{{ item.event }}">{{ item.event }}</td>
+                <td title="{{ item.industry }}">{{ item.industry }}</td>
+                <td title="{{ item.is_read }}">{{ item.is_read }}</td>
+                <td title="{{ item.msg_author }}">{{ item.msg_author }}</td>
+                <td title="{{ item.msg_title_cn }}">{{ item.msg_title_cn }}</td>
+                <td title="{{ item.msg_description }}">{{ item.msg_description }}</td>
+                <td title="{{ item.path }}">{{ item.path }}</td>
+                <td title="{{ item.regions_city }}">{{ item.regions_city }}</td>
+                <td title="{{ item.regions_country }}">{{ item.regions_country }}</td>
+                <td title="{{ item.regions_province }}">{{ item.regions_province }}</td>
+                <td title="{{ item.root_domain }}">{{ item.root_domain }}</td>
+                <td title="{{ item.tags }}">{{ item.tags }}</td>
+                <td title="{{ item.timestamp }}">{{ item.timestamp }}</td>
+                <td title="{{ item.toplv_domain }}">{{ item.toplv_domain }}</td>
+                <td title="{{ item.update_time }}">{{ item.update_time }}</td>
+                <td title="{{ item.user_id }}">{{ item.user_id }}</td>
+                <td title="{{ item.to_new }}">{{ item.to_new }}</td>
+                <td title="{{ item.msg_sample_ss }}">{{ item.msg_sample_ss }}</td>
+                <td title="{{ item.msg_keyword }}">{{ item.msg_keyword }}</td>
+                <td title="{{ item.msg_webpage_ss }}">{{ item.msg_webpage_ss }}</td>
+                <td title="{{ item.child_file }}">{{ item.child_file }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="29">没有找到数据</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,161 @@
+{% extends "db_display/base.html" %}
+{% block title %}Telegram数据{% endblock %}
+
+{% block content %}
+<div id="page-config"
+     data-api-base-url="{{ embed_api_base_url }}"
+     data-endpoint="{{ telegram_absolute_url }}"
+     data-next-cursor="{{ next_cursor_json|escape }}"
+     data-stats-url="{{ telegram_stats_refresh_absolute_url }}"
+     data-export-task-status-template="{{ export_task_status_template_absolute_url }}"
+     data-export-task-download-template="{{ export_task_download_template_absolute_url }}"
+     data-columns='[
+        {"key":"id"},
+        {"key":"id_field"},
+        {"key":"timestamp"},
+        {"key":"chat_id"},
+        {"key":"chat_name"},
+        {"key":"content_text"},
+        {"key":"event"},
+        {"key":"file_extension"},
+        {"key":"industry"},
+        {"key":"media_file_url"},
+        {"key":"media_type"},
+        {"key":"message_date"},
+        {"key":"message_id"},
+        {"key":"message_time"},
+        {"key":"org"},
+        {"key":"regions"},
+        {"key":"sender_first_name"},
+        {"key":"sender_last_name"},
+        {"key":"sender_id"},
+        {"key":"sender_phone"},
+        {"key":"sender_username"},
+        {"key":"tags"},
+        {"key":"page_type"},
+        {"key":"child_file"}
+     ]'></div>
+
+<h1>Telegram数据表</h1>
+
+<div class="summary-row">
+    <div class="summary">
+        当前条件下共有 <span id="stats-count" class="summary-highlight">{{ distinct_chat_ids_count|default:"--" }}</span> 个不同的聊天群组
+    </div>
+    <div class="summary-meta">
+        上次更新时间: <span id="stats-updated-at">{{ stats_updated_at|default:"未更新" }}</span>
+    </div>
+    <button
+        type="button"
+        id="stats-refresh-btn"
+        data-stats-url="{{ telegram_stats_refresh_absolute_url }}"
+        data-stats-formatter="raw"
+    >
+        更新统计
+    </button>
+    <span id="stats-refresh-status" class="summary-meta"></span>
+</div>
+
+<div class="search-panel">
+    <form method="get" action="" class="search-form">
+        <label for="start_date">开始日期:</label>
+        <input type="date" id="start_date" name="start_date" value="{{ request.GET.start_date|default:'' }}">
+
+        <label for="end_date">结束日期:</label>
+        <input type="date" id="end_date" name="end_date" value="{{ request.GET.end_date|default:'' }}">
+
+        <label for="search_field">搜索字段:</label>
+        <select id="search_field" name="search_field">
+            {% for value, label in search_field_options %}
+            <option value="{{ value }}">{{ label }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="search_value">搜索内容:</label>
+        <input type="text" id="search_value" name="search_value" value="{{ request.GET.search_value|default:'' }}" placeholder="输入关键词...">
+
+        <button type="submit">查询</button>
+        <button type="button" class="secondary-button" onclick="window.location.href=window.location.pathname;">清空重置</button>
+    </form>
+    <div class="summary-meta" style="margin-top: 10px;">
+        可异步导出当前筛选条件下的数据，最多导出 {{ export_max_rows }} 条。
+    </div>
+    <div class="button-row">
+        <button
+            type="button"
+            class="button"
+            data-export-create-url="{{ telegram_export_create_absolute_url }}"
+        >
+            导出 Excel
+        </button>
+        <span id="export-status" class="summary-meta"></span>
+    </div>
+</div>
+
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 60px;">ID</th>
+                <th style="width: 60px;">_id</th>
+                <th style="width: 180px;">时间戳</th>
+                <th style="width: 140px;">群组ID</th>
+                <th style="width: 100px;">群组名称</th>
+                <th style="width: 150px;">消息内容</th>
+                <th style="width: 40px;">事件</th>
+                <th style="width: 100px;">文件扩展名</th>
+                <th style="width: 60px;">行业</th>
+                <th style="width: 120px;">媒体文件URL</th>
+                <th style="width: 80px;">媒体类型</th>
+                <th style="width: 100px;">消息日期</th>
+                <th style="width: 100px;">消息ID</th>
+                <th style="width: 180px;">消息时间</th>
+                <th style="width: 80px;">组织</th>
+                <th style="width: 60px;">地区</th>
+                <th style="width: 80px;">发送者名字</th>
+                <th style="width: 80px;">发送者姓氏</th>
+                <th style="width: 80px;">发送者ID</th>
+                <th style="width: 100px;">发送者电话</th>
+                <th style="width: 120px;">发送者用户名</th>
+                <th style="width: 60px;">标签</th>
+                <th style="width: 80px;">页面类型</th>
+                <th style="width: 80px;">子文件</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in telegram_data %}
+            <tr>
+                <td title="{{ item.id }}">{{ item.id }}</td>
+                <td title="{{ item.id_field }}">{{ item.id_field }}</td>
+                <td title="{{ item.timestamp }}">{{ item.timestamp }}</td>
+                <td title="{{ item.chat_id }}">{{ item.chat_id }}</td>
+                <td title="{{ item.chat_name }}">{{ item.chat_name }}</td>
+                <td title="{{ item.content_text }}">{{ item.content_text }}</td>
+                <td title="{{ item.event }}">{{ item.event }}</td>
+                <td title="{{ item.file_extension }}">{{ item.file_extension }}</td>
+                <td title="{{ item.industry }}">{{ item.industry }}</td>
+                <td title="{{ item.media_file_url }}">{{ item.media_file_url }}</td>
+                <td title="{{ item.media_type }}">{{ item.media_type }}</td>
+                <td title="{{ item.message_date }}">{{ item.message_date }}</td>
+                <td title="{{ item.message_id }}">{{ item.message_id }}</td>
+                <td title="{{ item.message_time }}">{{ item.message_time }}</td>
+                <td title="{{ item.org }}">{{ item.org }}</td>
+                <td title="{{ item.regions }}">{{ item.regions }}</td>
+                <td title="{{ item.sender_first_name }}">{{ item.sender_first_name }}</td>
+                <td title="{{ item.sender_last_name }}">{{ item.sender_last_name }}</td>
+                <td title="{{ item.sender_id }}">{{ item.sender_id }}</td>
+                <td title="{{ item.sender_phone }}">{{ item.sender_phone }}</td>
+                <td title="{{ item.sender_username }}">{{ item.sender_username }}</td>
+                <td title="{{ item.tags }}">{{ item.tags }}</td>
+                <td title="{{ item.page_type }}">{{ item.page_type }}</td>
+                <td title="{{ item.child_file }}">{{ item.child_file }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="24">没有找到数据</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
