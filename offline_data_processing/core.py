@@ -4,9 +4,8 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 
-import name
-
 from .config import NAME_DUPLICATE_THRESHOLD
+from . import name
 
 
 BLACKLIST_NAMES = {
@@ -165,7 +164,6 @@ def identify_special_fields(data):
     if not data:
         return []
     rows_tags = []
-
     for row in data:
         name_candidates = []
         other_tags = []
@@ -199,12 +197,14 @@ def identify_special_fields(data):
                 selected_idx = name_candidates[0][0]
             if current_tags[selected_idx] == "":
                 current_tags[selected_idx] = "姓名"
+        if len(current_tags) < len(row):
+            current_tags.extend([""] * (len(row) - len(current_tags)))
         rows_tags.append(current_tags)
 
     column_names = defaultdict(list)
     for row_idx, row_tags in enumerate(rows_tags):
         for col_idx, tag in enumerate(row_tags):
-            if tag == "姓名":
+            if tag == "姓名" and col_idx < len(data[row_idx]):
                 column_names[col_idx].append(data[row_idx][col_idx])
 
     for col_idx, names in column_names.items():
@@ -213,7 +213,7 @@ def identify_special_fields(data):
         most_common = Counter(names).most_common(1)
         if most_common and most_common[0][1] / len(names) >= NAME_DUPLICATE_THRESHOLD and len(names) != 1:
             for row_idx in range(len(rows_tags)):
-                if rows_tags[row_idx][col_idx] == "姓名":
+                if col_idx < len(rows_tags[row_idx]) and rows_tags[row_idx][col_idx] == "姓名":
                     rows_tags[row_idx][col_idx] = ""
 
     return rows_tags
@@ -259,15 +259,16 @@ def determine_title(data, logger=None):
     return majority[0][0]
 
 
-def build_records(data, title, rows_tags, leak_channel, source, insert_time):
-    headers = data[0] if title == 1 and data else []
+def build_records(data, title, rows_tags, leak_channel, source, insert_time, headers=None, skip_header=None):
+    headers = headers if headers is not None else (data[0] if title == 1 and data else [])
+    skip_header = title == 1 if skip_header is None else skip_header
     for i, row in enumerate(data):
-        if title == 1 and i == 0:
+        if skip_header and i == 0:
             continue
         if i >= len(rows_tags):
             continue
 
-        if title == 1:
+        if headers:
             raw_data = {headers[j] if j < len(headers) else f"未知字段_{j}": value for j, value in enumerate(row)}
         else:
             raw_data = {str(j): value for j, value in enumerate(row)}

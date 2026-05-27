@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 from bs4 import BeautifulSoup
+from openpyxl import load_workbook
 
 from .config import SUPPORTED_EXTENSIONS
 from .core import tokenize_text
@@ -14,6 +15,7 @@ except ImportError:
 
 
 TEXT_EXTENSIONS = {"txt", "log", "md", "conf", "cfg", "ini", "css"}
+CELL_DELIMITERS = ["|", "\t", "，", ",", ";", "；"]
 
 
 def get_correct_extension(filename, supported_extensions=SUPPORTED_EXTENSIONS):
@@ -40,33 +42,98 @@ def read_file_rows(file_path, extension):
     raise ValueError(f"不支持的文件类型: {extension}")
 
 
-def read_text_rows(file_path):
-    data = []
+def iter_file_row_chunks(file_path, extension, chunk_size):
+    chunk = []
+    for row in iter_file_rows(file_path, extension):
+        chunk.append(row)
+        if len(chunk) >= chunk_size:
+            yield chunk
+            chunk = []
+    if chunk:
+        yield chunk
+
+
+def iter_file_rows(file_path, extension):
+    if extension in TEXT_EXTENSIONS:
+        yield from iter_text_rows(file_path)
+    elif extension == "csv":
+        yield from iter_csv_rows(file_path)
+    elif extension == "xlsx":
+        yield from iter_xlsx_rows(file_path)
+    else:
+        yield from read_file_rows(file_path, extension)
+
+
+def iter_text_rows(file_path):
     last_error = None
     for encoding in ["utf-8", "gbk", "gb2312", "latin-1"]:
         try:
             with open(file_path, "r", encoding=encoding, errors="replace") as file_obj:
                 for line in file_obj:
-                    tokens = tokenize_text(line.strip())
-                    if tokens:
-                        data.append(tokens)
-            return data
+                    text = line.strip()
+                    row_data = normalize_row_values([text])
+                    if len(row_data) == 1 and row_data[0] == text:
+                        row_data = tokenize_text(text)
+                    if row_data:
+                        yield row_data
+            return
         except Exception as exc:
             last_error = exc
-            data = []
     raise last_error
+
+
+def iter_csv_rows(file_path):
+    for chunk in pd.read_csv(file_path, low_memory=False, header=None, chunksize=5000):
+        for _, row in chunk.iterrows():
+            values = [str(cell).strip() if pd.notna(cell) else "" for cell in row]
+            row_data = normalize_row_values(values)
+            if any(row_data):
+                yield row_data
+
+
+def iter_xlsx_rows(file_path):
+    workbook = load_workbook(file_path, read_only=True, data_only=True)
+    try:
+        for sheet in workbook.worksheets:
+            for row in sheet.iter_rows(values_only=True):
+                values = [str(cell).strip() if cell is not None else "" for cell in row]
+                row_data = normalize_row_values(values)
+                if any(row_data):
+                    yield row_data
+    finally:
+        workbook.close()
+
+
+def read_text_rows(file_path):
+    return list(iter_text_rows(file_path))
+
+
+def split_cell_value(value):
+    value = str(value).strip()
+    if not value:
+        return []
+    for delimiter in CELL_DELIMITERS:
+        if delimiter in value:
+            parts = [part.strip() for part in value.split(delimiter)]
+            return [part for part in parts if part]
+    return [value]
+
+
+def normalize_row_values(values):
+    row_data = []
+    for value in values:
+        row_data.extend(split_cell_value(value))
+    return row_data
 
 
 def read_csv_rows(file_path):
     data = []
-    df = pd.read_csv(file_path, low_memory=False)
+    df = pd.read_csv(file_path, low_memory=False, header=None)
     if df.empty:
         return data
-    headers = [str(cell).strip() for cell in df.columns]
-    if any(headers):
-        data.append(headers)
     for _, row in df.iterrows():
-        row_data = [str(cell).strip() if pd.notna(cell) else "" for cell in row]
+        values = [str(cell).strip() if pd.notna(cell) else "" for cell in row]
+        row_data = normalize_row_values(values)
         if any(row_data):
             data.append(row_data)
     return data
@@ -76,14 +143,12 @@ def read_excel_rows(file_path):
     data = []
     suffix = Path(file_path).suffix.lower()
     engine = "openpyxl" if suffix == ".xlsx" else "xlrd"
-    df = pd.read_excel(file_path, engine=engine)
+    df = pd.read_excel(file_path, engine=engine, header=None)
     if df.empty:
         return data
-    headers = [str(cell).strip() for cell in df.columns]
-    if any(headers):
-        data.append(headers)
     for _, row in df.iterrows():
-        row_data = [str(cell).strip() if pd.notna(cell) else "" for cell in row]
+        values = [str(cell).strip() if pd.notna(cell) else "" for cell in row]
+        row_data = normalize_row_values(values)
         if any(row_data):
             data.append(row_data)
     return data
@@ -100,7 +165,7 @@ def read_docx_rows(file_path):
             data.append(tokens)
     for table in doc.tables:
         for row in table.rows:
-            row_cells = [cell.text.strip() for cell in row.cells]
+            row_cells = normalize_row_values(cell.text.strip() for cell in row.cells)
             if any(row_cells):
                 data.append(row_cells)
     return data
@@ -153,4 +218,3 @@ def read_json_rows(file_path):
         if row_values:
             data.append(row_values)
     return data
-

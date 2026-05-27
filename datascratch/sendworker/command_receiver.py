@@ -168,6 +168,14 @@ class CommandReceiver:
                                     if self.on_start_darknet:
                                         send_service.clear_stop_event(task_id)
                                         self.on_start_darknet(task_id, None, None)
+                                elif data_subtype == 1003:
+                                    if self.on_start_telegram:
+                                        send_service.clear_stop_event(task_id)
+                                        self.on_start_telegram(task_id, None, None)
+                                elif data_subtype == 1004:
+                                    if self.on_start_darknet:
+                                        send_service.clear_stop_event(task_id)
+                                        self.on_start_darknet(task_id, None, None)
                                 else:
                                     logging.warning("未知的data_subtype值: %s", data_subtype)
                             except Exception as exc:

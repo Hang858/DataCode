@@ -1,0 +1,30 @@
+{
+  "darknet": {
+    "distinct_count": 185,
+    "updated_at": "2026-04-20 15:18:09"
+  },
+  "telegram": {
+    "distinct_count": 722,
+    "updated_at": "2026-04-20 15:30:51"
+  },
+  "telegram:{\"end_date\": \"\", \"search_field\": \"\", \"search_value\": \"\", \"start_date\": \"\"}": {
+    "dataset": "telegram",
+    "distinct_count": 722,
+    "updated_at": "2026-04-20 15:35:48"
+  },
+  "telegram:{\"end_date\": \"\", \"search_field\": \"event\", \"search_value\": \"黄\", \"start_date\": \"\"}": {
+    "dataset": "telegram",
+    "distinct_count": 243,
+    "updated_at": "2026-04-20 15:35:58"
+  },
+  "telegram:{\"end_date\": \"\", \"search_field\": \"message_id\", \"search_value\": \"5487612\", \"start_date\": \"\"}": {
+    "dataset": "telegram",
+    "distinct_count": 1,
+    "updated_at": "2026-04-21 15:02:08"
+  },
+  "darknet:{\"end_date\": \"\", \"search_field\": \"event\", \"search_value\": \"数据泄露\", \"start_date\": \"\"}": {
+    "dataset": "darknet",
+    "distinct_count": 42,
+    "updated_at": "2026-04-21 15:06:27"
+  }
+}

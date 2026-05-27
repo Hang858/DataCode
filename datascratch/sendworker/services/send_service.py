@@ -19,6 +19,9 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
 
+TELEGRAM_SUBTYPE = 1003
+DARKNET_SUBTYPE = 1004
+
 cookie = ""
 running = True
 data_source = MySQLDataSource()
@@ -104,14 +107,14 @@ def send_data_to_api(data, data_type, data_subtype, data_id, file_ids=None, task
         logging.error("没有获取到cookie，无法发送数据")
         return False
 
-    datasource = 3 if data_subtype == 1002 else 2
+    datasource = 3 if data_subtype == DARKNET_SUBTYPE else 2
     x_tag = {
         "producer": current_api_config["user_agent"],
         "data_type": data_type,
         "data_subtype": data_subtype,
         "data_id": data_id,
         "datasource": datasource,
-        "schema_id": 100200 if data_subtype == 1002 else 100100,
+        "schema_id": 100200 if data_subtype == DARKNET_SUBTYPE else 100100,
         "task_id": task_id,
         "file_id_list": [int(fid) for fid in file_ids] if file_ids else [],
     }
@@ -156,18 +159,18 @@ def _send_rows(rows, task_id, module, subtype, builder, sleep_seconds):
     sent_count = 0
     for idx, item in enumerate(rows):
         if is_task_stopped(task_id):
-            logging.info("task_id=%s 收到停止标记，停止发送%s数据，已处理%s条", task_id, "telegram" if subtype == 1001 else "darknet", sent_count)
+            logging.info("task_id=%s 收到停止标记，停止发送%s数据，已处理%s条", task_id, "telegram" if subtype == TELEGRAM_SUBTYPE else "darknet", sent_count)
             break
         file_ids = extract_file_ids(item)
         message_dict = builder(item)
-        data_id = item.get("id", f"{'telegram' if subtype == 1001 else 'darknet'}_{idx}_{int(time.time())}")
+        data_id = item.get("id", f"{'telegram' if subtype == TELEGRAM_SUBTYPE else 'darknet'}_{idx}_{int(time.time())}")
         if is_task_stopped(task_id):
             logging.info("task_id=%s 收到停止标记，跳过data_id=%s", task_id, data_id)
             break
         success = send_data_to_api(message_dict, 1, subtype, data_id, file_ids, task_id, module=module)
         if not success:
             all_success = False
-            logging.error("第 %s 条%s数据发送失败", idx + 1, "telegram" if subtype == 1001 else "darknet")
+            logging.error("第 %s 条%s数据发送失败", idx + 1, "telegram" if subtype == TELEGRAM_SUBTYPE else "darknet")
         sent_count += 1
         time.sleep(sleep_seconds)
     return all_success, sent_count
@@ -278,7 +281,7 @@ def query_and_send_telegram_data(start_date, end_date, task_id=1, module=7):
         result_count = _row_count(results)
         if result_count is not None:
             logging.info("查询到 %s 条符合条件的telegram数据", result_count)
-        success, sent_count = _send_rows(results, task_id, module, 1001, _build_telegram_message, 0.1)
+        success, sent_count = _send_rows(results, task_id, module, TELEGRAM_SUBTYPE, _build_telegram_message, 0.1)
         if sent_count == 0:
             logging.info("没有查询到符合条件的数据")
             return True
@@ -318,7 +321,7 @@ def query_and_send_darknet_data(start_date, end_date, task_id=1, module=7):
         result_count = _row_count(results)
         if result_count is not None:
             logging.info("查询到 %s 条符合条件的darknet数据", result_count)
-        success, sent_count = _send_rows(results, task_id, module, 1002, _build_darknet_message, 0.5)
+        success, sent_count = _send_rows(results, task_id, module, DARKNET_SUBTYPE, _build_darknet_message, 0.5)
         if sent_count == 0:
             logging.info("没有查询到符合条件的数据")
             return True

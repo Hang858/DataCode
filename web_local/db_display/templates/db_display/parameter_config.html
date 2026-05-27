@@ -1,0 +1,76 @@
+{% extends "db_display/base.html" %}
+
+{% block title %}参数配置{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <h1>参数配置</h1>
+
+    {% if success_message %}
+    <div class="message-box success">
+        {{ success_message }}
+    </div>
+    {% endif %}
+
+    {% if info_message %}
+    <div class="message-box info">
+        {{ info_message }}
+    </div>
+    {% endif %}
+
+    {% if submitted %}
+    <div class="message-box success">
+        <h3>提交成功！</h3>
+        <ul>
+            <li>任务ID: {{ task_id }}</li>
+            <li>Telegram: {% if telegram_checked %}已选中{% else %}未选中{% endif %}</li>
+            <li>Darknet: {% if darknet_checked %}已选中{% else %}未选中{% endif %}</li>
+            <li>时间周期: {{ time_period }}</li>
+            <li>发送天数: {{ send_days }}</li>
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if error_message %}
+    <div class="message-box error">
+        {{ error_message }}
+    </div>
+    {% endif %}
+
+    <form method="post" action="">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="task_id">任务ID：</label>
+            <span><strong>{{ task_id }}</strong></span>
+            <input type="hidden" id="task_id" name="task_id" value="{{ task_id }}">
+        </div>
+
+        <div class="form-group">
+            <label>数据源选择：</label>
+            <div class="checkbox-group">
+                <input type="checkbox" id="telegram" name="telegram" {% if telegram_checked %}checked{% endif %}>
+                <label for="telegram">Telegram</label>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="darknet" name="darknet" {% if darknet_checked %}checked{% endif %}>
+                <label for="darknet">Darknet</label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="time_period">时间周期：</label>
+            <input type="number" id="time_period" name="time_period" value="{{ time_period }}" placeholder="输入天数" min="1" max="365">
+        </div>
+
+        <div class="form-group">
+            <label for="send_days">发送天数：</label>
+            <input type="number" id="send_days" name="send_days" value="{{ send_days }}" placeholder="输入天数" min="1" max="30">
+        </div>
+
+        <div style="text-align: center;">
+            <button type="submit" class="button">提交</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

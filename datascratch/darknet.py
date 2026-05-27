@@ -98,7 +98,7 @@ data={"requestType":request_type,
 print(data)
 
 try:
-    response = requests.post("http://192.168.1.10:8443/system/connect", headers=header, json=data, verify=False)
+    response = requests.post("http://192.168.23.201:8443/system/connect", headers=header, json=data, verify=False)
     cookie=response.headers['Set-Cookie']
     if response.status_code == 200:
         print("请求成功")

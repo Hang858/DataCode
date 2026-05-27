@@ -1,0 +1,103 @@
+services:
+  os-manager:
+    image: opensearchproject/opensearch:latest
+    container_name: offline-os-manager
+    environment:
+      - cluster.name=offline-data-cluster
+      - node.name=os-manager
+      - node.roles=cluster_manager
+      - discovery.seed_hosts=os-manager,os-data1,os-data2,os-data3
+      - cluster.initial_cluster_manager_nodes=os-manager
+      - bootstrap.memory_lock=true
+      - OPENSEARCH_JAVA_OPTS=-Xms2g -Xmx2g
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD:-MyStrongPass123!}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - ${OPENSEARCH_DATA_ROOT:-./opensearch-data}/manager:/usr/share/opensearch/data
+    ports:
+      - "${OPENSEARCH_PORT:-9200}:9200"
+      - "${OPENSEARCH_PERF_PORT:-9600}:9600"
+    networks:
+      - offline-os-net
+
+  os-data1:
+    image: opensearchproject/opensearch:latest
+    container_name: offline-os-data1
+    environment:
+      - cluster.name=offline-data-cluster
+      - node.name=os-data1
+      - node.roles=data,ingest
+      - discovery.seed_hosts=os-manager,os-data1,os-data2,os-data3
+      - cluster.initial_cluster_manager_nodes=os-manager
+      - bootstrap.memory_lock=true
+      - OPENSEARCH_JAVA_OPTS=-Xms4g -Xmx4g
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD:-MyStrongPass123!}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - ${OPENSEARCH_DATA_ROOT:-./opensearch-data}/data1:/usr/share/opensearch/data
+    networks:
+      - offline-os-net
+
+  os-data2:
+    image: opensearchproject/opensearch:latest
+    container_name: offline-os-data2
+    environment:
+      - cluster.name=offline-data-cluster
+      - node.name=os-data2
+      - node.roles=data,ingest
+      - discovery.seed_hosts=os-manager,os-data1,os-data2,os-data3
+      - cluster.initial_cluster_manager_nodes=os-manager
+      - bootstrap.memory_lock=true
+      - OPENSEARCH_JAVA_OPTS=-Xms4g -Xmx4g
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD:-MyStrongPass123!}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - ${OPENSEARCH_DATA_ROOT:-./opensearch-data}/data2:/usr/share/opensearch/data
+    networks:
+      - offline-os-net
+
+  os-data3:
+    image: opensearchproject/opensearch:latest
+    container_name: offline-os-data3
+    environment:
+      - cluster.name=offline-data-cluster
+      - node.name=os-data3
+      - node.roles=data,ingest
+      - discovery.seed_hosts=os-manager,os-data1,os-data2,os-data3
+      - cluster.initial_cluster_manager_nodes=os-manager
+      - bootstrap.memory_lock=true
+      - OPENSEARCH_JAVA_OPTS=-Xms4g -Xmx4g
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_INITIAL_ADMIN_PASSWORD:-MyStrongPass123!}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - ${OPENSEARCH_DATA_ROOT:-./opensearch-data}/data3:/usr/share/opensearch/data
+    networks:
+      - offline-os-net
+
+networks:
+  offline-os-net:
+    driver: bridge
